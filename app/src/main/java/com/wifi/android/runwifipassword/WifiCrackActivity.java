@@ -515,7 +515,7 @@ public class WifiCrackActivity extends Activity {
                         WifiManager.EXTRA_SUPPLICANT_ERROR, -1);
                 if (errorCode == WifiManager.ERROR_AUTHENTICATING) {
                     Log.i(TAG, "WIFI验证失败！");
-                    
+
                     if (cracking == true)
                         connectNetwork();
                 }
