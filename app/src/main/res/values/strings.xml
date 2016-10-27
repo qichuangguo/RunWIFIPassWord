@@ -1,3 +1,39 @@
 <resources>
     <string name="app_name">RunWifiPassword</string>
+    <string name="wifi_security_short_wep">WEP</string>
+    <string name="wifi_security_short_wpa">WPA</string>
+    <string name="wifi_security_short_wpa2">WPA2</string>
+    <string name="wifi_security_short_wpa_wpa2">WPA/WPA2</string>
+    <string name="wifi_security_short_psk_generic">@string/wifi_security_short_wpa_wpa2</string>
+    <string name="wifi_security_short_eap">802.1x</string>
+    <string name="wifi_security_none">None</string>
+
+    <string name="wifi_security_wep">WEP</string>
+    <string name="wifi_security_wpa">WPA PSK</string>
+    <string name="wifi_security_wpa2">WPA2 PSK</string>
+    <string name="wifi_security_wpa_wpa2">WPA/WPA2 PSK</string>
+    <string name="wifi_security_psk_generic">@string/wifi_security_wpa_wpa2</string>
+    <string name="wifi_security_eap">802.1x EAP</string>
+
+    <string name="wifi_accesspoint" msgid="6234851776910938957">"WIFI热点"</string>
+    <string name="wifi_access_points" msgid="6623468070878623378">"Wi-Fi 网络"</string>
+    <string name="wifi_settings_category" msgid="5989698986158534800">"WIFI Cracker"</string>
+
+
+
+    <string name="StartGame">开始破解</string>
+    <string name="Instructions">使用介绍</string>
+    <string name="CancelGame">退出软件</string>
+    <string name="ScoreRanking">破解记录</string>
+    <string name="back">返回</string>
+    <string name="SubmitResult">确认</string>
+    <string name="Selection1">选项一</string>
+    <string name="Selection2">选项二</string>
+    <string name="Selection3">选项三</string>
+    <string name="CloseMusic">关闭音乐</string>
+    <string name="NoticeSelect">请选择答案</string>
+    <string name="RestTime">已用时间</string>
+    <string name="text_view">忘记\n密码</string>
+    <drawable name="runninggame_bkcolor">#FAFAD2</drawable>
+    <drawable name="card_bkcolor">#FFDEAD</drawable>
 </resources>
