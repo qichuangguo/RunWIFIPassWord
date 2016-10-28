@@ -10,6 +10,15 @@ public class WifiPo {
     private String strength;
     private int type;
     private int state;
+    private int netid;
+
+    public int getNetid() {
+        return netid;
+    }
+
+    public void setNetid(int netid) {
+        this.netid = netid;
+    }
 
     public int getState() {
         return state;

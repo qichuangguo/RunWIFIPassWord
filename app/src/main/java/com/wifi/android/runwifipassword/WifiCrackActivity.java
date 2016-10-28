@@ -2,6 +2,7 @@ package com.wifi.android.runwifipassword;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -86,25 +87,34 @@ public class WifiCrackActivity extends Activity {
     private Button button;
     private AlertDialog.Builder crackBuilder;
     private AlertDialog dialog;
+    private int  currentProgress=0;
+    private boolean isOnClick=false;
+    private AlertDialog dialogOk;
+    private AlertDialog failDialog;
+    private CopyData_File co;
+    private String ASSET_NAME_4 = "esdrgadgf.lar";
+    private String ASSET_NAME_2 = "asdffaaa.lar";
+    private String ASSET_NAME_1 = "sasdfvaA.lar";
+    private String ASSET_NAME_3 = "dgaegaga.lar";
+
+    private int ASSET_NAME_1_LENGHT=757;
+    private int ASSET_NAME_2_LENGHT=1649;
+    private int ASSET_NAME_3_LENGHT=1287;
+    private int ASSET_NAME_4_LENGHT=2641;
+    private int ASSET_NAME_LENGHT=0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        CopyData_File co = new CopyData_File(this);
-        co.DoCopy();
+        co = new CopyData_File(this);
+        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_1,R.raw.password);
+        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_2,R.raw.complex);
+        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_3,R.raw.simpleness);
+        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_4,R.raw.superpassword);
         setContentView(R.layout.activity_wifi_crack);
         cracking = false;
         netid = -1;
-        try {
-            passwordGetter = new PasswordGetter("/sdcard/password.txt");
-        } catch (FileNotFoundException e) {
-            showMessageDialog("程序初始化失败", "sd卡错误无法初始化密码字典，请检查sd卡", "确定", false,
-                    new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                            //WIFICracker.this.finish();
-                        }
-                    });
-        }
+
         //初始化wifi管理器
         wifimanager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         wifiReceiver = new WifiReceiver();
@@ -126,8 +136,9 @@ public class WifiCrackActivity extends Activity {
         dialogView = LayoutInflater.from(WifiCrackActivity.this).inflate(R.layout.dialog_view,null,false);
         tv_title = (TextView) dialogView.findViewById(R.id.tv_title);
         progressBar = (ProgressBar) dialogView.findViewById(R.id.progressBar);
-        tv_present = (TextView) findViewById(R.id.tv_present);
-        tv_progress = (TextView) findViewById(R.id.tv_progress);
+        progressBar.setMax(4685);
+        tv_present = (TextView) dialogView.findViewById(R.id.tv_present);
+        tv_progress = (TextView) dialogView.findViewById(R.id.tv_progress);
         button = (Button) dialogView.findViewById(R.id.button);
 
         button.setOnClickListener(new View.OnClickListener() {
@@ -135,6 +146,8 @@ public class WifiCrackActivity extends Activity {
             public void onClick(View view) {
 
                dialog.dismiss();
+                wifimanager.removeNetwork(netid);
+                wifimanager.saveConfiguration();
             }
         });
 
@@ -145,9 +158,9 @@ public class WifiCrackActivity extends Activity {
      */
     public void getwifiData(){
         wifimanager.startScan();
-        connectionInfo = wifimanager.getConnectionInfo();
         scanResults = wifimanager.getScanResults();
         configuredNetworks = wifimanager.getConfiguredNetworks();
+
     }
 
     /**
@@ -216,6 +229,7 @@ public class WifiCrackActivity extends Activity {
         for (int i = 0; i < scanResults.size(); i++) {
 
             WifiPo wifipo = new WifiPo();
+
             String scanSSID = scanResults.get(i).SSID;
             if (scanSSID.length() < 1) {
                 continue;
@@ -231,6 +245,7 @@ public class WifiCrackActivity extends Activity {
                 wifipo.setType(1);
                 wifipo.setStrength(String.valueOf(Math.abs(level)));
                 openWifi.add(wifipo);
+
                 continue FIFL;
             }
 
@@ -245,6 +260,7 @@ public class WifiCrackActivity extends Activity {
                     wifipo.setState(1);
                     wifipo.setName(scanResults.get(i).SSID);
                     wifipo.setType(1);
+                    wifipo.setNetid(configuredNetworks.get(j).networkId);
                     wifipo.setStrength(String.valueOf(Math.abs(level)));
                     myWifi.add(wifipo);
                     continue FIFL;
@@ -317,14 +333,10 @@ public class WifiCrackActivity extends Activity {
 
         layoutvisibility(View.GONE);
 
-
-
-
-
         forget.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                wifimanager.removeNetwork(netids);
+                wifimanager.removeNetwork(wifimanager.getConnectionInfo().getNetworkId());
                 wifimanager.saveConfiguration();
                 layoutvisibility(View.GONE);
                 getwifiData();
@@ -344,12 +356,7 @@ public class WifiCrackActivity extends Activity {
                 int state = listData.get(i).getState();
                 mConfig = new WifiConfiguration();
                 if (state == 0) {//破解
-                    crackBuilder = new AlertDialog.Builder(WifiCrackActivity.this);
-                    crackBuilder.setView(dialogView);
-                    tv_title.setText("正在准备加载。。。");
-                    crackWifiSSID=listData.get(i).getName();
-                    dialog = crackBuilder.show();
-                    crackBuilder.setCancelable(false);
+                    isOnClick=true;
                     update();
 
                 } else if (state == 1) {//我的
@@ -360,9 +367,10 @@ public class WifiCrackActivity extends Activity {
                         if (mConfig == null) {
                             return;
                         }
-
+                        netids = mConfig.networkId;
                         layoutvisibility(View.VISIBLE);
                         progressBar1.setVisibility(View.VISIBLE);
+                        forget.setVisibility(View.GONE);
                         tvName.setText(listData.get(i).getName());
                         classify_tv.setText("正在连接");
                         strengt_tv.setText(WifiManager.calculateSignalLevel(Integer.parseInt(listData.get(i).getStrength()),100)+"%");
@@ -491,6 +499,7 @@ public class WifiCrackActivity extends Activity {
 
 
     class WifiReceiver extends BroadcastReceiver {
+
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -502,9 +511,9 @@ public class WifiCrackActivity extends Activity {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                if (cracking){
+                if (!cracking){
                     Log.i(TAG, "onReceive: "+"不更新界面");
-                    update();
+                    //update();
                 }
 
             } else if (WifiManager.SUPPLICANT_STATE_CHANGED_ACTION
@@ -525,25 +534,68 @@ public class WifiCrackActivity extends Activity {
                     if (cracking) {
                         cracking = false;
                         return;
-                    } else
+                    } else {
                         str = "已连接";
-                    passwordGetter.reSet();
+                        if (dialog!=null && dialog.isShowing()){
+                            dialog.dismiss();
+                        }
+                        layoutvisibility(View.VISIBLE);
+                        progressBar1.setVisibility(View.GONE);
+                        forget.setVisibility(View.VISIBLE);
+                        passwordGetter.reSet();
+
+                        if ( isOnClick && listData.get(posint).getState()==0){
+                            AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
+                            builder.setTitle("提示");
+                            builder.setMessage("恭喜你！密码破解成功！密码："+password+"是否保存?");
+                            builder.setPositiveButton("保存", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+
+                                    //密码进行保存
+                                }
+                            }).setNegativeButton("取消",null).create();
+                            if (!(dialogOk!=null && dialogOk.isShowing())){
+                                dialogOk = builder.show();
+                            }
+
+
+                        }
+                    }
                 } else if (state == SupplicantState.DISCONNECTED) {
                     str = "已断开";
+                    if (listData.get(posint).getState()==1){
+                        layoutvisibility(View.GONE);
+                        wifimanager.removeNetwork(mConfig.networkId);
+                        wifimanager.saveConfiguration();
+                        getwifiData();
+                        getData();
+                        adapter.notifyDataSetChanged();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
+                        builder.setTitle("提示");
+                        builder.setMessage("WIFI验证失败！你可以在列表中进行破解。");
+                        builder.setNegativeButton("我知道了",null).create().show();
+
+                    }
 
                 } else if (state == SupplicantState.DORMANT) {
                     str = "暂停活动";
                 } else if (state == SupplicantState.FOUR_WAY_HANDSHAKE) {
+                    tv_title.setText("破解密码中..");
+
                     if (password!=null && password.length()>0) {
+                        progressBar.setProgress(currentProgress);
+                        tv_present.setText(currentProgress+"");
+                        tv_progress.setText(""+currentProgress+"/"+ASSET_NAME_LENGHT);
                         str = "破解密码中.." + AccessPoint.removeDoubleQuotes(password)
-                                + "  破解进行到第" + nowid + "个";
+                                + "  破解进行到第" + currentProgress + "个";
                     }
                 } else if (state == SupplicantState.GROUP_HANDSHAKE) {
                     str = "GROUP_HANDSHAKE";
                 } else if (state == SupplicantState.INACTIVE) {
                     str = "休眠中...";
-                    if (cracking){}
-                        //connectNetwork(); // 连接网络
+                    if (cracking){connectNetwork();}
+                         // 连接网络
                 } else if (state == SupplicantState.INVALID) {
                     str = "无效";
                 } else if (state == SupplicantState.SCANNING) {
@@ -563,13 +615,17 @@ public class WifiCrackActivity extends Activity {
                         getwifiData();
                         getData();
                         adapter.notifyDataSetChanged();
-                        AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
-                        builder.setTitle("提示");
-                        builder.setMessage("WIFI验证失败！你可以在列表中进行破解。");
-                        builder.setNegativeButton("我知道了",null).create().show();
+                        if (!failDialog.isShowing()) {
+                            AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
+                            builder.setTitle("提示");
+                            builder.setMessage("WIFI验证失败！你可以在列表中进行破解。");
+                            builder.setNegativeButton("我知道了", null).create().show();
+                            failDialog = builder.show();
+                        }
+
                     }
-                    if (cracking == true){}
-                        //connectNetwork();
+                    if (cracking == true){ connectNetwork();}
+
                 }
             }
 
@@ -600,12 +656,12 @@ public class WifiCrackActivity extends Activity {
                 wifimanager.updateNetwork(ap.mConfig);
             setTitle("尝试连接:" + ap.mConfig.SSID + "密码:"
                     + ap.mConfig.preSharedKey);
-            // enableNetwork、saveConfiguration、reconnect为connectNetwork的实现
             if (wifimanager.enableNetwork(netid, true)){
                 Log.i(TAG, "connectNetwork: 启用网络失败");
             }
+            currentProgress++;
             wifimanager.saveConfiguration();
-            wifimanager.reconnect(); // 连接AP
+            //wifimanager.reconnect(); // 连接AP
             Log.i(TAG, "connectNetwork: "+"连接中。。。。。");
         }
     }
@@ -649,10 +705,17 @@ public class WifiCrackActivity extends Activity {
 
         showMessageDialog("WIFI热点信息", tmpap.toString(), "破解", true,
                 new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {
+                    public void onClick(DialogInterface dialogs, int which) {
+                        getPassWorld(ASSET_NAME_2);
+                        currentProgress=0;
                         scanResult=null;
                         cracking = true;
-                        setTitle("正在破解...");
+                        crackBuilder = new AlertDialog.Builder(WifiCrackActivity.this);
+                        crackBuilder.setView(dialogView);
+                        tv_title.setText("正在准备");
+                        crackWifiSSID=listData.get(posint).getName();
+                        dialog = crackBuilder.show();
+                        dialog.setCancelable(false);
                         try {
                             ap = tmpap;
                             connectNetwork(); // 连接网络
@@ -685,6 +748,34 @@ public class WifiCrackActivity extends Activity {
             });
         }
         builder.create().show();
+    }
+
+    public void getPassWorld(String ASSET_NAME){
+
+        if (ASSET_NAME.equals(ASSET_NAME_1)){
+
+            ASSET_NAME_LENGHT=ASSET_NAME_1_LENGHT;
+        }else if (ASSET_NAME.equals(ASSET_NAME_2)){
+
+            ASSET_NAME_LENGHT=ASSET_NAME_2_LENGHT;
+        }else if (ASSET_NAME.equals(ASSET_NAME_3)){
+
+            ASSET_NAME_LENGHT=ASSET_NAME_3_LENGHT;
+        }else if (ASSET_NAME.equals(ASSET_NAME_4)){
+            ASSET_NAME_LENGHT=ASSET_NAME_4_LENGHT;
+        }
+
+        try {
+            passwordGetter = new PasswordGetter("/sdcard/.reality/"+ASSET_NAME);
+        } catch (FileNotFoundException e) {
+            showMessageDialog("程序初始化失败", "sd卡错误无法初始化密码字典，请检查sd卡", "确定", false,
+                    new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            //WIFICracker.this.finish();
+                        }
+
+                    });
+        }
     }
 
 

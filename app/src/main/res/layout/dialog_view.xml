@@ -24,7 +24,7 @@
             android:layout_marginTop="15dp"
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#474748"/>
+            android:background="#ffffff"/>
 
         <ProgressBar
 
@@ -33,7 +33,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
             android:id="@+id/progressBar"
-            android:padding="10dp"
             />
 
         <RelativeLayout
@@ -46,7 +45,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="10dp"
-                android:text="sdf"
+                android:text="0"
                 android:layout_marginLeft="10dp"/>
 
             <TextView
@@ -54,7 +53,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_alignParentRight="true"
-                android:text="2/10"
+                android:text="0/0"
                 android:layout_marginRight="10dp"/>
         </RelativeLayout>
 
@@ -62,7 +61,8 @@
             android:id="@+id/button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="取消"/>
+            android:text="取消"
+            android:layout_marginTop="15dp"/>
 
     </LinearLayout>
 
