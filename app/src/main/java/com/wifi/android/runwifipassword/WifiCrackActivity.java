@@ -20,9 +20,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import com.wifi.android.runwifipassword.util.AccessPoint;
 import com.wifi.android.runwifipassword.util.CopyData_File;
 import com.wifi.android.runwifipassword.util.PasswordGetter;
@@ -53,25 +57,15 @@ public class WifiCrackActivity extends Activity {
     private LinearLayout linearLayout01;
     private RelativeLayout relativeLayout;
     private LinearLayout linearLayout02;
-    private TextView strengt_tv;
-    private TextView tvName;
-    private TextView classify_tv;
     private TextView forget;
-    private int netids;
     private listViewAdaper adapter;
-    private WifiInfo wifiInfo;
-    //String TAG = "chuangguo.qi";
     private WifiReceiver wifiReceiver;
     private AccessPoint ap;
     private AccessPoint tmpap;
-    private Preference preference;
     private String password;
-    private List<WifiConfiguration> configs;
-    private IntentFilter intentFilter;
-    //private PasswordGetter passwordGetter;
     private boolean cracking;
-    private WifiConfiguration config;
     private int netid;
+    private int netids;
     private static final String TAG = "chuangguo.qi";
     List<ScanResult> results;
     ScanResult result;
@@ -79,6 +73,19 @@ public class WifiCrackActivity extends Activity {
     private PasswordGetter passwordGetter;
     ScanResult scanResult = null;
     private String crackWifiSSID;
+    private int posint =0;
+    private TextView strengt_tv;
+    private TextView tvName;
+    private TextView classify_tv;
+    private ProgressBar progressBar1;
+    private View dialogView;
+    private TextView tv_title;
+    private ProgressBar progressBar;
+    private TextView tv_present;
+    private TextView tv_progress;
+    private Button button;
+    private AlertDialog.Builder crackBuilder;
+    private AlertDialog dialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,17 +115,41 @@ public class WifiCrackActivity extends Activity {
         intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
         registerReceiver(wifiReceiver, intentFilter);
         getwifiData();
-       // Log.i(TAG, "onCreate: configuredNetworks" + configuredNetworks);
         initView();
+        initDialogView();
         initData();
         getData();
     }
+
+    private void initDialogView() {
+
+        dialogView = LayoutInflater.from(WifiCrackActivity.this).inflate(R.layout.dialog_view,null,false);
+        tv_title = (TextView) dialogView.findViewById(R.id.tv_title);
+        progressBar = (ProgressBar) dialogView.findViewById(R.id.progressBar);
+        tv_present = (TextView) findViewById(R.id.tv_present);
+        tv_progress = (TextView) findViewById(R.id.tv_progress);
+        button = (Button) dialogView.findViewById(R.id.button);
+
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+               dialog.dismiss();
+            }
+        });
+
+    }
+
+    /**
+     * 获取wifi列表
+     */
     public void getwifiData(){
-        connectionInfo = wifimanager.getConnectionInfo();
         wifimanager.startScan();
+        connectionInfo = wifimanager.getConnectionInfo();
         scanResults = wifimanager.getScanResults();
         configuredNetworks = wifimanager.getConfiguredNetworks();
     }
+
     /**
      * 初始化数据
      */
@@ -131,8 +162,28 @@ public class WifiCrackActivity extends Activity {
         comparator = new Comparator<WifiPo>() {
             @Override
             public int compare(WifiPo wifiPo, WifiPo t1) {
-                int leve1 = Integer.parseInt(wifiPo.getStrength());
-                int leve2 = Integer.parseInt(t1.getStrength());
+                int leve1=0;
+                int leve2=0;
+                try {
+                    if (wifiPo.getStrength()==null){
+
+                        leve1 = Integer.parseInt("0");
+                    }else {
+
+                        leve1 = Integer.parseInt(wifiPo.getStrength());
+                    }
+
+                    if (t1.getStrength()==null){
+                        leve2 = Integer.parseInt("0");
+                    }else {
+
+                        leve2 = Integer.parseInt(t1.getStrength());
+                    }
+                }catch (Exception e){
+
+                    e.printStackTrace();
+                }
+
                 if (leve1 > leve2) {
                     return -1;
                 } else if (leve1 < leve2) {
@@ -144,11 +195,19 @@ public class WifiCrackActivity extends Activity {
             }
         };
 
+
+
+
+
     }
 
 
     public void getData() {
 
+        myWifi.clear();
+        openWifi.clear();
+        crackWifi.clear();
+        listData.clear();
         if (scanResults == null) {
             return;
         }
@@ -253,7 +312,14 @@ public class WifiCrackActivity extends Activity {
         tvName = (TextView) findViewById(R.id.tv);
         classify_tv = (TextView) findViewById(R.id.classify_tv);
         forget = (TextView) findViewById(R.id.forget);
+
+        progressBar1 = (ProgressBar) findViewById(R.id.progressBar1);
+
         layoutvisibility(View.GONE);
+
+
+
+
 
         forget.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -269,14 +335,21 @@ public class WifiCrackActivity extends Activity {
         listView.setShadowVisible(false);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 Log.i(TAG, "onItemClick: " + listData.get(i).getName());
+                posint=i;
                 int state = listData.get(i).getState();
                 mConfig = new WifiConfiguration();
                 if (state == 0) {//破解
-
+                    crackBuilder = new AlertDialog.Builder(WifiCrackActivity.this);
+                    crackBuilder.setView(dialogView);
+                    tv_title.setText("正在准备加载。。。");
                     crackWifiSSID=listData.get(i).getName();
+                    dialog = crackBuilder.show();
+                    crackBuilder.setCancelable(false);
                     update();
 
                 } else if (state == 1) {//我的
@@ -288,6 +361,11 @@ public class WifiCrackActivity extends Activity {
                             return;
                         }
 
+                        layoutvisibility(View.VISIBLE);
+                        progressBar1.setVisibility(View.VISIBLE);
+                        tvName.setText(listData.get(i).getName());
+                        classify_tv.setText("正在连接");
+                        strengt_tv.setText(WifiManager.calculateSignalLevel(Integer.parseInt(listData.get(i).getStrength()),100)+"%");
                         wifimanager.enableNetwork(mConfig.networkId, true);
                         wifimanager.saveConfiguration();
                     }
@@ -299,6 +377,9 @@ public class WifiCrackActivity extends Activity {
                     wifimanager.enableNetwork(wifimanager.addNetwork(mConfig), true);
                     wifimanager.saveConfiguration();
                 }
+
+
+
 
             }
         });
@@ -408,45 +489,6 @@ public class WifiCrackActivity extends Activity {
         relativeLayout.setVisibility(visibility);
     }
 
-    /*class WifiReceiver extends BroadcastReceiver{
-
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            if (intent.getAction().equals(WifiManager.NETWORK_STATE_CHANGED_ACTION)){//wifi状态
-
-                NetworkInfo info = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
-                if(info.getState().equals(NetworkInfo.State.DISCONNECTED)){
-                    Log.i(TAG, "onReceive:\"wifi网络连接断开 ");
-                    layoutvisibility(View.GONE);
-                }
-                else if(info.getState().equals(NetworkInfo.State.CONNECTED)){
-
-                    WifiInfo wifiInfo = wifimanager.getConnectionInfo();
-                    //获取当前wifi名称
-                    Log.i(TAG, "onReceive: 连接到网络"+wifiInfo.getSSID());
-                    layoutvisibility(View.VISIBLE);
-                    WifiInfo configuration =wifimanager.getConnectionInfo();
-                    int level = WifiManager.calculateSignalLevel(configuration.getRssi(),
-                            100);
-                    strengt_tv.setText(level+"%");
-                    tvName.setText(configuration.getSSID().substring(1,configuration.getSSID().length()-1));
-                    classify_tv.setText("已连接");
-                    netid = configuration.getNetworkId();
-                    forget.setVisibility(View.VISIBLE);
-
-                }
-            }
-
-            final int errorCode = intent.getIntExtra(
-                    WifiManager.EXTRA_SUPPLICANT_ERROR, -1);
-            if (errorCode == WifiManager.ERROR_AUTHENTICATING) {
-                Log.i(TAG, "WIFI验证失败！");
-                setTitle("WIFI验证失败！");
-            }
-        }
-    }*/
 
     class WifiReceiver extends BroadcastReceiver {
         @Override
@@ -500,8 +542,8 @@ public class WifiCrackActivity extends Activity {
                     str = "GROUP_HANDSHAKE";
                 } else if (state == SupplicantState.INACTIVE) {
                     str = "休眠中...";
-                    if (cracking)
-                        connectNetwork(); // 连接网络
+                    if (cracking){}
+                        //connectNetwork(); // 连接网络
                 } else if (state == SupplicantState.INVALID) {
                     str = "无效";
                 } else if (state == SupplicantState.SCANNING) {
@@ -510,14 +552,24 @@ public class WifiCrackActivity extends Activity {
                     str = "未初始化";
                 }
                 Log.i(TAG, "onReceive: "+str);
-                setTitle(str);
                 final int errorCode = intent.getIntExtra(
                         WifiManager.EXTRA_SUPPLICANT_ERROR, -1);
                 if (errorCode == WifiManager.ERROR_AUTHENTICATING) {
                     Log.i(TAG, "WIFI验证失败！");
-
-                    if (cracking == true)
-                        connectNetwork();
+                    if (listData.get(posint).getState()==1) {
+                        layoutvisibility(View.GONE);
+                        wifimanager.removeNetwork(mConfig.networkId);
+                        wifimanager.saveConfiguration();
+                        getwifiData();
+                        getData();
+                        adapter.notifyDataSetChanged();
+                        AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
+                        builder.setTitle("提示");
+                        builder.setMessage("WIFI验证失败！你可以在列表中进行破解。");
+                        builder.setNegativeButton("我知道了",null).create().show();
+                    }
+                    if (cracking == true){}
+                        //connectNetwork();
                 }
             }
 
@@ -565,7 +617,6 @@ public class WifiCrackActivity extends Activity {
             return;
         }
         if (scanResult==null) {
-            Log.i(TAG, "update:--- "+crackWifiSSID);
             for (int i = 0; i < results.size(); i++) {
                 scanResult = results.get(i);
                 if (scanResult.SSID.equals(crackWifiSSID)) {
@@ -575,7 +626,6 @@ public class WifiCrackActivity extends Activity {
         }else {
 
             tmpap = new AccessPoint(this, scanResult);
-            Log.i(TAG, "update: "+scanResult.SSID);
             checkAP();
             return;
         }

@@ -77,6 +77,19 @@
             android:visibility="gone"
             android:text="@string/text_view" />
 
+        <ProgressBar
+            android:id="@+id/progressBar1"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:indeterminate="false"
+            android:indeterminateDrawable="@drawable/loading_drawable"
+            android:indeterminateBehavior="repeat"
+            android:indeterminateDuration="1000"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:visibility="gone"/>
+
+
     </RelativeLayout>
 
     <LinearLayout
