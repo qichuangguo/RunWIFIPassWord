@@ -32,9 +32,11 @@ import android.widget.Toast;
 import com.wifi.android.runwifipassword.util.AccessPoint;
 import com.wifi.android.runwifipassword.util.CopyData_File;
 import com.wifi.android.runwifipassword.util.PasswordGetter;
+import com.wifi.android.runwifipassword.util.SharedPrefsUtil;
 import com.wifi.android.runwifipassword.view.PinnedSectionListView;
 
 import java.io.FileNotFoundException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -92,15 +94,15 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
     private AlertDialog dialogOk;
     private AlertDialog failDialog;
     private CopyData_File co;
-    private String ASSET_NAME_4 = "esdrgadgf.lar";
-    private String ASSET_NAME_1 = "asdffaaa.lar";
-    private String ASSET_NAME_2 = "sasdfvaA.lar";
-    private String ASSET_NAME_3 = "dgaegaga.lar";
+    private String ASSET_NAME_1 = "adfaf.lar";
+    private String ASSET_NAME_4 = "adfdfvv.lar";
+    private String ASSET_NAME_2 = "adaegg.lar";
+    private String ASSET_NAME_3 = "dafawef.lar";
 
     private int ASSET_NAME_1_LENGHT=757;
     private int ASSET_NAME_2_LENGHT=1649;
-    private int ASSET_NAME_3_LENGHT=1287;
-    private int ASSET_NAME_4_LENGHT=2641;
+    private int ASSET_NAME_3_LENGHT=2641;
+    private int ASSET_NAME_4_LENGHT=1287;
     private int ASSET_NAME_LENGHT=0;
     private View select_dialog_view;
     private Button bt_base;
@@ -111,14 +113,15 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
     private AlertDialog.Builder select_dialog;
     private AlertDialog.Builder integralDialog;
     private AlertDialog integralDialogshow;
+    private DatabaseHelper helper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         co = new CopyData_File(this);
-        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_1,R.raw.password);
+        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_1,R.raw.simpleness);
         co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_2,R.raw.complex);
-        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_3,R.raw.simpleness);
+        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_3,R.raw.password);
         co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_4,R.raw.superpassword);
         setContentView(R.layout.activity_wifi_crack);
         cracking = false;
@@ -138,6 +141,7 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
         initDialogView();
         initData();
         getData();
+
     }
 
     private void initDialogView() {
@@ -438,21 +442,17 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                 return true;
             }
         });
+
+        helper = DatabaseHelper.getHelper(WifiCrackActivity.this);
     }
 
     @Override
     public void onClick(View view) {
 
-        SharedPreferences myIntegral = getSharedPreferences("myIntegral", 0);
-        int myIntegral1 = myIntegral.getInt("myIntegral", 0);
+        int myIntegral1 = SharedPrefsUtil.getValue(this,"myIntegral",0);
         if (view.getId()==R.id.bt_base){
-            if (myIntegral1>=5) {
                 getPassWorld(ASSET_NAME_1);
                 isIntegralOK();
-            }else {
-
-                getIntegral(5);
-            }
         }else if (view.getId()==R.id.bt_standard){
 
             if (myIntegral1>=10) {
@@ -593,7 +593,6 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
         relativeLayout.setVisibility(visibility);
     }
 
-
     class WifiReceiver extends BroadcastReceiver {
 
         @Override
@@ -642,10 +641,38 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                             AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
                             builder.setTitle("提示");
                             builder.setMessage("恭喜你！密码破解成功！密码："+password+"是否保存?");
+
                             builder.setPositiveButton("保存", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
+                                    boolean isSever=false;
+                                    CrackWifiPo crackWifiPo = new CrackWifiPo();
+                                    crackWifiPo.setName(wifimanager.getConnectionInfo().getSSID());
+                                    crackWifiPo.setBssid(wifimanager.getConnectionInfo().getBSSID());
+                                    crackWifiPo.setPassword(password);
 
+                                    try {
+                                        List<CrackWifiPo> users= helper.getUserDao().queryForAll();
+                                        for (int j=0;j<users.size();j++){
+
+                                            String bssid = users.get(j).getBssid();
+                                            if (bssid.equals(wifimanager.getConnectionInfo().getBSSID())){
+                                                isSever=true;
+
+                                            }
+                                        }
+
+                                    } catch (SQLException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                    try {
+                                        if (!isSever) {
+                                            helper.getUserDao().create(crackWifiPo);
+                                        }
+                                    } catch (SQLException e) {
+                                        e.printStackTrace();
+                                    }
                                     //密码进行保存
                                 }
                             }).setNegativeButton("取消",null).create();
@@ -733,10 +760,10 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
             ap.mConfig.priority = 1;
             ap.mConfig.status = WifiConfiguration.Status.ENABLED;
             password = passwordGetter.getPassword(); // 从外部字典加载密码
-            Log.i(TAG, "password: --------"+password);
+            //Log.i(TAG, "password: --------"+password);
             if (password == null || password.length() == 0) {
                 cracking = false;
-                Log.i(TAG, "password:==NULL");
+               // Log.i(TAG, "password:==NULL");
                 return;
             }
             password = "\"" + password + "\"";
@@ -876,7 +903,8 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
             integralDialog.setPositiveButton("确认", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-
+                    Intent intent = new Intent(WifiCrackActivity.this,IntegralMainActivity.class);
+                    startActivity(intent);
                     //前往获取积分
                 }
             }).setNegativeButton("取消",null);

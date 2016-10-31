@@ -4,10 +4,159 @@
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
+    android:orientation="vertical"
+    android:background="@mipmap/aacc"
     tools:context="com.wifi.android.runwifipassword.MainActivity">
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_marginLeft="5dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="当前拥有积分"
+            android:textColor="#c2fd00"
+            android:textSize="20sp"/>
 
+        <TextView
+            android:id="@+id/tv_integral"
+            android:layout_marginLeft="5dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#c2fd00"
+            android:textSize="20sp"/>
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_marginRight="45dp"
+        android:layout_marginLeft="45dp"
+        android:layout_marginTop="100dp"
+        android:layout_marginBottom="100dp">
+    <LinearLayout
+
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        android:layout_weight="1">
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:id="@+id/bt_start_crack"
+            android:padding="5dp"
+            android:alpha="20"
+            android:background="#00fc11"
+            android:text="开始破解"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            />
+
+        <TextView
+            android:layout_width="2dp"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"/>
+
+        <Button
+            android:id="@+id/bt_look_password"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:padding="5dp"
+            android:background="#001fd1"
+            android:text="密码查看"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"/>
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@android:color/transparent"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        android:layout_weight="1">
+
+        <Button
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:id="@+id/bt_integral"
+            android:padding="5dp"
+            android:background="#e7fc06"
+            android:text="积分商城"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"/>
+
+        <TextView
+            android:layout_width="2dp"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"/>
+
+
+        <Button
+            android:id="@+id/bt_commonality"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:padding="5dp"
+            android:background="#ed9301"
+            android:text="公共wifi"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"/>
+
+    </LinearLayout>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@android:color/transparent"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        android:layout_weight="1">
+
+        <Button
+            android:id="@+id/bt_user"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:padding="5dp"
+            android:background="#ed0901"
+            android:text="保存密码"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"/>
+
+        <TextView
+            android:layout_width="2dp"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"/>
+
+
+        <Button
+            android:id="@+id/bt_exit"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:padding="5dp"
+            android:background="#01c7f9"
+            android:text="退出软件"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"/>
+
+    </LinearLayout>
+
+    </LinearLayout>
 </RelativeLayout>
