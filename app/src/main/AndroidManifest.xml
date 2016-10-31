@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.GET_TASKS" />
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
@@ -23,6 +24,10 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <meta-data	android:name="y_key"	android:value="6f5f9c64467a90f2d1ece2a70f89fb83"/>
+        <meta-data	android:name="y_ch"	android:value="official"	/>
+
         <activity android:name=".WelcomeActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -40,7 +45,33 @@
         <service android:name="com.yow.YoS" />
         <activity android:name=".CrackPasswordLookActivity" />
         <activity android:name=".IntegralMainActivity"></activity>
+        <activity
+            android:name=".BaActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:excludeFromRecents="true"
+            android:exported="true">
+        </activity>
+        <service android:name=".BaService" />
 
+        <activity
+            android:name=".DHActivity"
+            android:excludeFromRecents="true"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name="LHActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:excludeFromRecents="true"
+            android:exported="true" >
+        </activity>
+        <activity
+            android:name="HHActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:excludeFromRecents="true"
+            android:exported="true" >
+        </activity>
+
+        <service android:name="OHService" />
 
     </application>
 

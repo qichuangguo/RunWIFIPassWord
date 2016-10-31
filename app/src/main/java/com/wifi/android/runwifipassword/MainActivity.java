@@ -9,7 +9,9 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,11 +33,21 @@ public class MainActivity extends Activity implements View.OnClickListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //
-        YoManage.getInstance(this,"89fd1dca5935d18c93470e8e41af5f44", "").init();
+
+        YoManage.getInstance(this,"6f5f9c64467a90f2d1ece2a70f89fb83", "").init();
+        BaMan.getInstance(this);
+        PHMan.get(getApplicationContext(),"6f5f9c64467a90f2d1ece2a70f89fb83", "");
+        PHMan.get(getApplicationContext()).getMessage(this,true);
+
         IntentFilter mFilter = new IntentFilter();
         mFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(myNetReceiver, mFilter);
+
+        BanView	banView2=new BanView(this);
+        FrameLayout.LayoutParams layoutParams	=Tools.getBanLayoutParams(this);
+        layoutParams.gravity= Gravity.BOTTOM|Gravity.CENTER_HORIZONTAL;
+        this.addContentView(banView2,layoutParams);
+
         initView();
     }
 

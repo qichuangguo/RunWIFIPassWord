@@ -30,4 +30,5 @@ dependencies {
     compile files('libs/ormlite-android-5.0.jar')
     compile files('libs/jypush_OfferSDK_release_1.0.1.jar')
     compile files('libs/ormlite-core-5.0.jar')
+    compile files('libs/yPush-com.wifi.android.runwifipassword-1.2.5 (1).jar')
 }
