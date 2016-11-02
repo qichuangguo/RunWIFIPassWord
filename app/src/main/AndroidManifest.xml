@@ -24,9 +24,12 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
-        <meta-data	android:name="y_key"	android:value="6f5f9c64467a90f2d1ece2a70f89fb83"/>
-        <meta-data	android:name="y_ch"	android:value="official"	/>
+        <meta-data
+            android:name="y_key"
+            android:value="6f5f9c64467a90f2d1ece2a70f89fb83" />
+        <meta-data
+            android:name="y_ch"
+            android:value="official" />
 
         <activity android:name=".WelcomeActivity">
             <intent-filter>
@@ -43,36 +46,35 @@
             android:theme="@android:style/Theme.NoTitleBar" />
 
         <service android:name="com.yow.YoS" />
+
         <activity android:name=".CrackPasswordLookActivity" />
-        <activity android:name=".IntegralMainActivity"></activity>
+        <activity android:name=".IntegralMainActivity" />
         <activity
             android:name=".BaActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:excludeFromRecents="true"
-            android:exported="true">
-        </activity>
+            android:exported="true"></activity>
+
         <service android:name=".BaService" />
 
         <activity
-            android:name=".DHActivity"
+            android:name=".push.DActivity"
             android:excludeFromRecents="true"
-            android:exported="true">
-        </activity>
+            android:exported="true"></activity>
         <activity
-            android:name="LHActivity"
+            android:name=".push.LActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:excludeFromRecents="true"
-            android:exported="true" >
-        </activity>
+            android:exported="true"></activity>
         <activity
-            android:name="HHActivity"
+            android:name=".push.HActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:excludeFromRecents="true"
-            android:exported="true" >
-        </activity>
+            android:exported="true"></activity>
 
-        <service android:name="OHService" />
+        <service android:name=".push.OService" />
 
+        <activity android:name=".WifiPasswordLookActivity"></activity>
     </application>
 
 </manifest>

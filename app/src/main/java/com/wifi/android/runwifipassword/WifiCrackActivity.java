@@ -17,12 +17,14 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -129,18 +131,62 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
 
         //初始化wifi管理器
         wifimanager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        wifiReceiver = new WifiReceiver();
-        IntentFilter intentFilter = new IntentFilter(
-                WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        intentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
-        intentFilter.addAction(WifiManager.RSSI_CHANGED_ACTION);
-        intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-        registerReceiver(wifiReceiver, intentFilter);
-        getwifiData();
-        initView();
-        initDialogView();
-        initData();
-        getData();
+        if(!wifimanager.isWifiEnabled()){
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
+            builder.setTitle("提示");
+            builder.setMessage("当前wifi没有打开请先打开wifi");
+            builder.setPositiveButton("打开", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+
+                    wifimanager.setWifiEnabled(true);
+                    wifiReceiver = new WifiReceiver();
+                    IntentFilter intentFilter = new IntentFilter(
+                            WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+                    intentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
+                    intentFilter.addAction(WifiManager.RSSI_CHANGED_ACTION);
+                    intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+                    registerReceiver(wifiReceiver, intentFilter);
+                    getwifiData();
+                    initView();
+                    initDialogView();
+                    initData();
+                    getData();
+
+                    BaMan.getInstance(WifiCrackActivity.this);
+                    BanView banView2 = new BanView(WifiCrackActivity.this);
+                    FrameLayout.LayoutParams layoutParams = Tools.getBanLayoutParams(WifiCrackActivity.this);
+                    layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+                    WifiCrackActivity.this.addContentView(banView2, layoutParams);
+                }
+            }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    finish();
+                }
+            }).create().show();
+
+        }else {
+            wifiReceiver = new WifiReceiver();
+            IntentFilter intentFilter = new IntentFilter(
+                    WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+            intentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
+            intentFilter.addAction(WifiManager.RSSI_CHANGED_ACTION);
+            intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+            registerReceiver(wifiReceiver, intentFilter);
+            getwifiData();
+            initView();
+            initDialogView();
+            initData();
+            getData();
+
+            BaMan.getInstance(this);
+            BanView banView2 = new BanView(this);
+            FrameLayout.LayoutParams layoutParams = Tools.getBanLayoutParams(this);
+            layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+            this.addContentView(banView2, layoutParams);
+        }
 
     }
 

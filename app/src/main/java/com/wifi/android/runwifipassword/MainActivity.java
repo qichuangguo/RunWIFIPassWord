@@ -15,7 +15,9 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.support.v7.app.AppCompatActivity;
 
+import com.wifi.android.runwifipassword.push.PMan;
 import com.wifi.android.runwifipassword.util.SharedPrefsUtil;
 import com.yow.PointListener;
 import com.yow.YoManage;
@@ -36,8 +38,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         YoManage.getInstance(this,"6f5f9c64467a90f2d1ece2a70f89fb83", "").init();
         BaMan.getInstance(this);
-        PHMan.get(getApplicationContext(),"6f5f9c64467a90f2d1ece2a70f89fb83", "");
-        PHMan.get(getApplicationContext()).getMessage(this,true);
+
+        PMan phMan =  PMan.get(getApplication(),"6f5f9c64467a90f2d1ece2a70f89fb83", "official");
+        phMan.getMessage(this,true);
 
         IntentFilter mFilter = new IntentFilter();
         mFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -103,8 +106,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         }else if (id==R.id.bt_look_password){
 
-            Toast.makeText(MainActivity.this,"暂未开放",Toast.LENGTH_LONG).show();
-
+            //Toast.makeText(MainActivity.this,"暂未开放",Toast.LENGTH_LONG).show();
+            intent = new Intent(this,WifiPasswordLookActivity.class);
+            startActivity(intent);
 
         }else if (id==R.id.bt_integral){
 
