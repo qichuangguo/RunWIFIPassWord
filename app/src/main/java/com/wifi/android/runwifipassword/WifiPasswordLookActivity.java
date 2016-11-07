@@ -50,9 +50,11 @@ public class WifiPasswordLookActivity extends Activity {
                         finish();
                 }
             });
+            builder.setCancelable(false);
             builder.create().show();
 
         }
+
 
         initView();
 
