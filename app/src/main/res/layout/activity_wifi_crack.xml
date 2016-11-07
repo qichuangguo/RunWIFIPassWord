@@ -11,7 +11,8 @@
         android:id="@+id/linear01"
         android:layout_width="match_parent"
         android:layout_height="20dp"
-        android:background="#d9d5d5">
+        android:background="#d9d5d5"
+        android:visibility="gone">
     </LinearLayout>
 
     <RelativeLayout
@@ -19,7 +20,8 @@
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_margin="8dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone">
 
         <LinearLayout
             android:id="@+id/line1"
@@ -96,7 +98,8 @@
         android:id="@+id/linear02"
         android:layout_width="match_parent"
         android:layout_height="20dp"
-        android:background="#d9d5d5"></LinearLayout>
+        android:background="#d9d5d5"
+        android:visibility="gone"></LinearLayout>
 
     <com.wifi.android.runwifipassword.view.PinnedSectionListView
         android:id="@+id/listView"

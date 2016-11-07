@@ -3,6 +3,7 @@ package com.wifi.android.runwifipassword;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -33,6 +34,7 @@ import android.widget.Toast;
 
 import com.wifi.android.runwifipassword.util.AccessPoint;
 import com.wifi.android.runwifipassword.util.CopyData_File;
+import com.wifi.android.runwifipassword.util.LogUtil;
 import com.wifi.android.runwifipassword.util.PasswordGetter;
 import com.wifi.android.runwifipassword.util.SharedPrefsUtil;
 import com.wifi.android.runwifipassword.view.PinnedSectionListView;
@@ -44,7 +46,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class WifiCrackActivity extends Activity implements View.OnClickListener {
+public class WifiCrackActivity extends BaseActivity implements View.OnClickListener {
 
     PinnedSectionListView listView;
     private List<WifiPo> listData;
@@ -78,7 +80,7 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
     private PasswordGetter passwordGetter;
     ScanResult scanResult = null;
     private String crackWifiSSID;
-    private int posint =0;
+    private int posint = 0;
     private TextView strengt_tv;
     private TextView tvName;
     private TextView classify_tv;
@@ -91,8 +93,8 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
     private Button button;
     private AlertDialog.Builder crackBuilder;
     private AlertDialog dialog;
-    private int  currentProgress=0;
-    private boolean isOnClick=false;
+    private int currentProgress = 0;
+    private boolean isOnClick = false;
     private AlertDialog dialogOk;
     private AlertDialog failDialog;
     private CopyData_File co;
@@ -101,11 +103,11 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
     private String ASSET_NAME_2 = "adaegg.lar";
     private String ASSET_NAME_3 = "dafawef.lar";
 
-    private int ASSET_NAME_1_LENGHT=757;
-    private int ASSET_NAME_2_LENGHT=1649;
-    private int ASSET_NAME_3_LENGHT=2641;
-    private int ASSET_NAME_4_LENGHT=1287;
-    private int ASSET_NAME_LENGHT=0;
+    private int ASSET_NAME_1_LENGHT = 757;
+    private int ASSET_NAME_2_LENGHT = 1649;
+    private int ASSET_NAME_3_LENGHT = 2641;
+    private int ASSET_NAME_4_LENGHT = 1287;
+    private int ASSET_NAME_LENGHT = 0;
     private View select_dialog_view;
     private Button bt_base;
     private Button bt_standard;
@@ -116,83 +118,80 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
     private AlertDialog.Builder integralDialog;
     private AlertDialog integralDialogshow;
     private DatabaseHelper helper;
+    private WifiOpenOrClose wifiOpenOrClose;
+    private boolean isOne=true;
+    private ProgressDialog progressDialog;
+    private boolean isCrackOk = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         co = new CopyData_File(this);
-        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_1,R.raw.simpleness);
-        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_2,R.raw.complex);
-        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_3,R.raw.password);
-        co.DoCopy(co.getSDPath()+"/",co.getSDPath()+"/"+ASSET_NAME_4,R.raw.superpassword);
+        co.DoCopy(co.getSDPath() + "/", co.getSDPath() + "/" + ASSET_NAME_1, R.raw.simpleness);
+        co.DoCopy(co.getSDPath() + "/", co.getSDPath() + "/" + ASSET_NAME_2, R.raw.complex);
+        co.DoCopy(co.getSDPath() + "/", co.getSDPath() + "/" + ASSET_NAME_3, R.raw.password);
+        co.DoCopy(co.getSDPath() + "/", co.getSDPath() + "/" + ASSET_NAME_4, R.raw.superpassword);
         setContentView(R.layout.activity_wifi_crack);
         cracking = false;
         netid = -1;
-
+        initView();
         //初始化wifi管理器
         wifimanager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-        if(!wifimanager.isWifiEnabled()){
+        LogUtil.i("WiFi未打开"+wifimanager.isWifiEnabled());
 
-            AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
-            builder.setTitle("提示");
-            builder.setMessage("当前wifi没有打开请先打开wifi");
-            builder.setPositiveButton("打开", new DialogInterface.OnClickListener() {
+        if (!wifimanager.isWifiEnabled()){
+            LogUtil.i("WiFi未打开");
+            showDialogTip("当前WiFi未打开是否打开？", "确定", "取消", new View.OnClickListener() {
                 @Override
-                public void onClick(DialogInterface dialog, int which) {
+                public void onClick(View v) {
 
+                    IntentFilter intentFilter = new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION);
+                    wifiOpenOrClose = new WifiOpenOrClose();
+                    registerReceiver(wifiOpenOrClose,intentFilter);
+                    progressDialog.show();
                     wifimanager.setWifiEnabled(true);
-                    wifiReceiver = new WifiReceiver();
-                    IntentFilter intentFilter = new IntentFilter(
-                            WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-                    intentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
-                    intentFilter.addAction(WifiManager.RSSI_CHANGED_ACTION);
-                    intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-                    registerReceiver(wifiReceiver, intentFilter);
-                    getwifiData();
-                    initView();
-                    initDialogView();
-                    initData();
-                    getData();
-
-                    BaMan.getInstance(WifiCrackActivity.this);
-                    BanView banView2 = new BanView(WifiCrackActivity.this);
-                    FrameLayout.LayoutParams layoutParams = Tools.getBanLayoutParams(WifiCrackActivity.this);
-                    layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-                    WifiCrackActivity.this.addContentView(banView2, layoutParams);
                 }
-            }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+            }, new View.OnClickListener() {
                 @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    finish();
+                public void onClick(View v) {
+                    WifiCrackActivity.this.finish();
                 }
-            }).create().show();
+            });
 
         }else {
-            wifiReceiver = new WifiReceiver();
-            IntentFilter intentFilter = new IntentFilter(
-                    WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-            intentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
-            intentFilter.addAction(WifiManager.RSSI_CHANGED_ACTION);
-            intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-            registerReceiver(wifiReceiver, intentFilter);
-            getwifiData();
-            initView();
-            initDialogView();
-            initData();
-            getData();
 
-            BaMan.getInstance(this);
-            BanView banView2 = new BanView(this);
-            FrameLayout.LayoutParams layoutParams = Tools.getBanLayoutParams(this);
-            layoutParams.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
-            this.addContentView(banView2, layoutParams);
+            getwifiData();
+            if (scanResults.size()>0) {
+                initDialogView();
+                initData();
+                getData();
+            }else {
+
+                showDialogTip("当前范围内没有可用WiFi", "我知道了", null, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        finish();
+                    }
+                },null);
+            }
+
         }
+
+        wifiReceiver = new WifiReceiver();
+        IntentFilter intentFilter02 = new IntentFilter(
+                WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+        intentFilter02.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
+        intentFilter02.addAction(WifiManager.RSSI_CHANGED_ACTION);
+        intentFilter02.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+        intentFilter02.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        registerReceiver(wifiReceiver, intentFilter02);
+
 
     }
 
     private void initDialogView() {
 
-        dialogView = LayoutInflater.from(WifiCrackActivity.this).inflate(R.layout.dialog_view,null,false);
+        dialogView = LayoutInflater.from(WifiCrackActivity.this).inflate(R.layout.dialog_view, null, false);
         tv_title = (TextView) dialogView.findViewById(R.id.tv_title);
         progressBar = (ProgressBar) dialogView.findViewById(R.id.progressBar);
         progressBar.setMax(4685);
@@ -215,11 +214,11 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
     /**
      * 获取wifi列表
      */
-    public void getwifiData(){
+    public void getwifiData() {
         wifimanager.startScan();
         scanResults = wifimanager.getScanResults();
         configuredNetworks = wifimanager.getConfiguredNetworks();
-
+        LogUtil.i("-----scanResults--" + scanResults.size());
     }
 
     /**
@@ -234,24 +233,24 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
         comparator = new Comparator<WifiPo>() {
             @Override
             public int compare(WifiPo wifiPo, WifiPo t1) {
-                int leve1=0;
-                int leve2=0;
+                int leve1 = 0;
+                int leve2 = 0;
                 try {
-                    if (wifiPo.getStrength()==null){
+                    if (wifiPo.getStrength() == null) {
 
                         leve1 = Integer.parseInt("0");
-                    }else {
+                    } else {
 
                         leve1 = Integer.parseInt(wifiPo.getStrength());
                     }
 
-                    if (t1.getStrength()==null){
+                    if (t1.getStrength() == null) {
                         leve2 = Integer.parseInt("0");
-                    }else {
+                    } else {
 
                         leve2 = Integer.parseInt(t1.getStrength());
                     }
-                }catch (Exception e){
+                } catch (Exception e) {
 
                     e.printStackTrace();
                 }
@@ -266,9 +265,6 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                 }
             }
         };
-
-
-
 
 
     }
@@ -321,7 +317,7 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                     wifipo.setType(1);
                     wifipo.setNetid(configuredNetworks.get(j).networkId);
                     wifipo.setStrength(String.valueOf(Math.abs(level)));
-                    if (!scanResults.get(i).SSID.equals(wifimanager.getConnectionInfo().getSSID().substring(1,wifimanager.getConnectionInfo().getSSID().length()-1))){
+                    if (!scanResults.get(i).SSID.equals(wifimanager.getConnectionInfo().getSSID().substring(1, wifimanager.getConnectionInfo().getSSID().length() - 1))) {
 
                     }
 
@@ -379,6 +375,10 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
      */
     private void initView() {
 
+        progressDialog = new ProgressDialog(WifiCrackActivity.this);
+        progressDialog.setMessage("正在打开WiFi请稍等！");
+
+
         listView = (PinnedSectionListView) findViewById(R.id.listView);
         adapter = new listViewAdaper();
         listView.setAdapter(adapter);
@@ -393,7 +393,7 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
 
         progressBar1 = (ProgressBar) findViewById(R.id.progressBar1);
 
-        select_dialog_view = LayoutInflater.from(WifiCrackActivity.this).inflate(R.layout.select_dialog_view,null,false);
+        select_dialog_view = LayoutInflater.from(WifiCrackActivity.this).inflate(R.layout.select_dialog_view, null, false);
 
         bt_base = (Button) select_dialog_view.findViewById(R.id.bt_base);
         bt_standard = (Button) select_dialog_view.findViewById(R.id.bt_standard);
@@ -425,18 +425,18 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
 
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Log.i(TAG, "onItemClick: " + listData.get(i).getName());
-                posint=i;
+                LogUtil.i("onItemClick: " + listData.get(i).getName());
+                posint = i;
                 int state = listData.get(i).getState();
                 mConfig = new WifiConfiguration();
                 if (state == 0) {//破解
-                    isOnClick=true;
+                    isOnClick = true;
                     update();
 
                 } else if (state == 1) {//我的
-                    if (wifimanager.getConnectionInfo().getSSID().equals("\""+listData.get(i).getName()+"\"")) {
+                    if (wifimanager.getConnectionInfo().getSSID().equals("\"" + listData.get(i).getName() + "\"")) {
                         return;
-                    }else {
+                    } else {
                         mConfig = isExsits(listData.get(i).getName());
                         if (mConfig == null) {
                             return;
@@ -447,7 +447,7 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                         forget.setVisibility(View.GONE);
                         tvName.setText(listData.get(i).getName());
                         classify_tv.setText("正在连接");
-                        strengt_tv.setText(WifiManager.calculateSignalLevel(Integer.parseInt(listData.get(i).getStrength()),100)+"%");
+                        strengt_tv.setText(WifiManager.calculateSignalLevel(Integer.parseInt(listData.get(i).getStrength()), 100) + "%");
                         wifimanager.enableNetwork(mConfig.networkId, true);
                         wifimanager.saveConfiguration();
                     }
@@ -465,8 +465,8 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(final AdapterView<?> adapterView, View view, int i, long l) {
-                final  int clickID = i;
-                if (listData.get(i).getState()==1){
+                final int clickID = i;
+                if (listData.get(i).getState() == 1) {
                     return true;
                 }
                 AlertDialog.Builder removeSSID = new AlertDialog.Builder(WifiCrackActivity.this);
@@ -476,14 +476,14 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
 
-                        Log.i(TAG, "onClick: "+listData.get(clickID).getNetid());
+                        LogUtil.i("onClick: " + listData.get(clickID).getNetid());
                         wifimanager.removeNetwork(listData.get(clickID).getNetid());
                         wifimanager.saveConfiguration();
                         getwifiData();
                         getData();
                         adapter.notifyDataSetChanged();
                     }
-                }).setNegativeButton("取消",null).create().show();
+                }).setNegativeButton("取消", null).create().show();
 
                 return true;
             }
@@ -494,42 +494,42 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
 
     @Override
     public void onClick(View view) {
+        isCrackOk=true;
+        int myIntegral1 = SharedPrefsUtil.getValue(this, "myIntegral", 0);
+        if (view.getId() == R.id.bt_base) {
+            getPassWorld(ASSET_NAME_1);
+            isIntegralOK();
+        } else if (view.getId() == R.id.bt_standard) {
 
-        int myIntegral1 = SharedPrefsUtil.getValue(this,"myIntegral",0);
-        if (view.getId()==R.id.bt_base){
-                getPassWorld(ASSET_NAME_1);
-                isIntegralOK();
-        }else if (view.getId()==R.id.bt_standard){
-
-            if (myIntegral1>=10) {
+            if (myIntegral1 >= 10) {
                 getPassWorld(ASSET_NAME_2);
                 isIntegralOK();
-            }else {
+            } else {
 
                 getIntegral(10);
             }
-        }else if (view.getId()==R.id.bt_advanced){
+        } else if (view.getId() == R.id.bt_advanced) {
 
-            if (myIntegral1>=20) {
+            if (myIntegral1 >= 20) {
                 getPassWorld(ASSET_NAME_3);
                 isIntegralOK();
 
-            }else {
+            } else {
 
                 getIntegral(20);
             }
 
-        }else if (view.getId()==R.id.bt_king){
-            if (myIntegral1>=30) {
+        } else if (view.getId() == R.id.bt_king) {
+            if (myIntegral1 >= 30) {
                 getPassWorld(ASSET_NAME_4);
                 isIntegralOK();
-            }else {
+            } else {
 
                 getIntegral(30);
             }
         }
 
-        if (selectDialogShow!=null && selectDialogShow.isShowing()) {
+        if (selectDialogShow != null && selectDialogShow.isShowing()) {
             selectDialogShow.dismiss();
         }
 
@@ -628,11 +628,11 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                 return configure;
             }
         }
-        Log.i(TAG, "isExsits: null");
+        LogUtil.i("isExsits: null");
         return null;
     }
 
-    public void layoutvisibility(int visibility){
+    public void layoutvisibility(int visibility) {
 
         linearLayout01.setVisibility(visibility);
         linearLayout02.setVisibility(visibility);
@@ -645,8 +645,8 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(action)) {
-                if (!cracking){
-                    Log.i(TAG, "onReceive: "+"不更新界面");
+                if (!cracking) {
+                    LogUtil.i("onReceive: " + "不更新界面");
                     //update();
                 }
 
@@ -659,7 +659,7 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                     nowid++;
                     str = "关联AP完成";
                 } else if (state.toString().equals("AUTHENTICATING")) {
-                    if (password!=null && password.length()>0) {
+                    if (password != null && password.length() > 0) {
                         str = "正在验证密码" + AccessPoint.removeDoubleQuotes(password);
                     }
                 } else if (state == SupplicantState.ASSOCIATING) {
@@ -670,68 +670,67 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                         return;
                     } else {
                         str = "已连接";
-                        if (dialog!=null && dialog.isShowing()){
+                        if (dialog != null && dialog.isShowing()) {
                             dialog.dismiss();
                         }
-                        layoutvisibility(View.VISIBLE);
-                        progressBar1.setVisibility(View.GONE);
-                        forget.setVisibility(View.VISIBLE);
-                        tvName.setText(wifimanager.getConnectionInfo().getSSID().substring(1,wifimanager.getConnectionInfo().getSSID().length()-1));
-                        classify_tv.setText(str);
-                        strengt_tv.setText(listData.get(posint).getStrength());
-                        if (passwordGetter!=null) {
+                        if (listData != null && listData.size() > 0) {
+                            layoutvisibility(View.VISIBLE);
+                            progressBar1.setVisibility(View.GONE);
+                            forget.setVisibility(View.VISIBLE);
+                            tvName.setText(wifimanager.getConnectionInfo().getSSID().substring(1, wifimanager.getConnectionInfo().getSSID().length() - 1));
+                            classify_tv.setText(str);
+                            strengt_tv.setText(listData.get(posint).getStrength());
+                        }
+                        if (passwordGetter != null) {
                             passwordGetter.reSet();
                         }
 
-                        if ( isOnClick && listData.get(posint).getState()==0){
-                            AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
-                            builder.setTitle("提示");
-                            builder.setMessage("恭喜你！密码破解成功！密码："+password+"是否保存?");
+                        if (isOnClick && listData.get(posint).getState() == 0) {
 
-                            builder.setPositiveButton("保存", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    boolean isSever=false;
-                                    CrackWifiPo crackWifiPo = new CrackWifiPo();
-                                    crackWifiPo.setName(wifimanager.getConnectionInfo().getSSID());
-                                    crackWifiPo.setBssid(wifimanager.getConnectionInfo().getBSSID());
-                                    crackWifiPo.setPassword(password);
+                            if (isCrackOk) {
+                                isCrackOk=false;
+                                showDialogTip("恭喜你！密码破解成功！密码：" + password + "是否保存?", "保存", "取消", new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View v) {
 
-                                    try {
-                                        List<CrackWifiPo> users= helper.getUserDao().queryForAll();
-                                        for (int j=0;j<users.size();j++){
+                                        boolean isSever = false;
+                                        CrackWifiPo crackWifiPo = new CrackWifiPo();
+                                        crackWifiPo.setName(wifimanager.getConnectionInfo().getSSID());
+                                        crackWifiPo.setBssid(wifimanager.getConnectionInfo().getBSSID());
+                                        crackWifiPo.setPassword(password);
 
-                                            String bssid = users.get(j).getBssid();
-                                            if (bssid.equals(wifimanager.getConnectionInfo().getBSSID())){
-                                                isSever=true;
+                                        try {
+                                            List<CrackWifiPo> users = helper.getUserDao().queryForAll();
+                                            for (int j = 0; j < users.size(); j++) {
 
+                                                String bssid = users.get(j).getBssid();
+                                                if (bssid.equals(wifimanager.getConnectionInfo().getBSSID())) {
+                                                    isSever = true;
+
+                                                }
                                             }
+
+                                        } catch (SQLException e) {
+                                            e.printStackTrace();
                                         }
 
-                                    } catch (SQLException e) {
-                                        e.printStackTrace();
-                                    }
-
-                                    try {
-                                        if (!isSever) {
-                                            helper.getUserDao().create(crackWifiPo);
+                                        try {
+                                            if (!isSever) {
+                                                helper.getUserDao().create(crackWifiPo);
+                                            }
+                                        } catch (SQLException e) {
+                                            e.printStackTrace();
                                         }
-                                    } catch (SQLException e) {
-                                        e.printStackTrace();
+
                                     }
-                                    //密码进行保存
-                                }
-                            }).setNegativeButton("取消",null).create();
-                            if (!(dialogOk!=null && dialogOk.isShowing())){
-                                dialogOk = builder.show();
+                                }, null);
                             }
-
-
                         }
                     }
+
                 } else if (state == SupplicantState.DISCONNECTED) {
                     str = "已断开";
-                    if (listData.get(posint).getState()==1){
+                    if (listData.get(posint).getState() == 1) {
                         layoutvisibility(View.GONE);
                         wifimanager.removeNetwork(mConfig.networkId);
                         wifimanager.saveConfiguration();
@@ -741,7 +740,7 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                         AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
                         builder.setTitle("提示");
                         builder.setMessage("WIFI验证失败！你可以在列表中进行破解。");
-                        builder.setNegativeButton("我知道了",null).create().show();
+                        builder.setNegativeButton("我知道了", null).create().show();
 
                     }
 
@@ -750,10 +749,10 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                 } else if (state == SupplicantState.FOUR_WAY_HANDSHAKE) {
                     tv_title.setText("破解密码中..");
 
-                    if (password!=null && password.length()>0) {
+                    if (password != null && password.length() > 0) {
                         progressBar.setProgress(currentProgress);
-                        tv_present.setText(currentProgress+"");
-                        tv_progress.setText(""+currentProgress+"/"+ASSET_NAME_LENGHT);
+                        tv_present.setText(currentProgress + "");
+                        tv_progress.setText("" + currentProgress + "/" + ASSET_NAME_LENGHT);
                         str = "破解密码中.." + AccessPoint.removeDoubleQuotes(password)
                                 + "  破解进行到第" + currentProgress + "个";
                     }
@@ -761,8 +760,10 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                     str = "GROUP_HANDSHAKE";
                 } else if (state == SupplicantState.INACTIVE) {
                     str = "休眠中...";
-                    if (cracking){connectNetwork();}
-                         // 连接网络
+                    if (cracking) {
+                        connectNetwork();
+                    }
+                    // 连接网络
                 } else if (state == SupplicantState.INVALID) {
                     str = "无效";
                 } else if (state == SupplicantState.SCANNING) {
@@ -770,12 +771,12 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                 } else if (state == SupplicantState.UNINITIALIZED) {
                     str = "未初始化";
                 }
-                Log.i(TAG, "onReceive: "+str);
+                LogUtil.i("onReceive: " + str);
                 final int errorCode = intent.getIntExtra(
                         WifiManager.EXTRA_SUPPLICANT_ERROR, -1);
                 if (errorCode == WifiManager.ERROR_AUTHENTICATING) {
-                    Log.i(TAG, "WIFI验证失败！");
-                    if (listData.get(posint).getState()==1) {
+                    LogUtil.i("WIFI验证失败！");
+                    if (listData.get(posint).getState() == 1) {
                         layoutvisibility(View.GONE);
                         wifimanager.removeNetwork(mConfig.networkId);
                         wifimanager.saveConfiguration();
@@ -791,13 +792,15 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                         }
 
                     }
-                    if (cracking == true){ connectNetwork();}
+                    if (cracking == true) {
+                        connectNetwork();
+                    }
 
                 }
             }
 
-
         }
+
     }
 
     private void connectNetwork() {
@@ -809,7 +812,7 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
             //Log.i(TAG, "password: --------"+password);
             if (password == null || password.length() == 0) {
                 cracking = false;
-               // Log.i(TAG, "password:==NULL");
+                // Log.i(TAG, "password:==NULL");
                 return;
             }
             password = "\"" + password + "\"";
@@ -818,41 +821,41 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
             if (netid == -1) {
                 netid = wifimanager.addNetwork(ap.mConfig);
                 ap.mConfig.networkId = netid;
-                Log.i(TAG, "添加AP失败");
+                LogUtil.i( "添加AP失败");
             } else
                 wifimanager.updateNetwork(ap.mConfig);
-            if (wifimanager.enableNetwork(netid, true)){
-                Log.i(TAG, "connectNetwork: 启用网络失败");
+            if (wifimanager.enableNetwork(netid, true)) {
+                LogUtil.i("connectNetwork: 启用网络失败");
             }
             currentProgress++;
             wifimanager.saveConfiguration();
             wifimanager.reconnect(); // 连接AP
-            Log.i(TAG, "connectNetwork: "+"连接中。。。。");
+            LogUtil.i("connectNetwork: " + "连接中。。。。");
         }
     }
 
-    public void update(){
+    public void update() {
 
-        if (scanResults==null){
+        if (scanResults == null) {
 
             return;
         }
-        if (scanResult==null) {
+        if (scanResult == null) {
             for (int i = 0; i < scanResults.size(); i++) {
                 scanResult = scanResults.get(i);
                 if (scanResult.SSID.equals(listData.get(posint).getName())) {
                     break;
                 }
             }
-        }else {
+        } else {
 
             tmpap = new AccessPoint(this, scanResult);
             checkAP();
             return;
         }
-        if (scanResult!=null) {
+        if (scanResult != null) {
             tmpap = new AccessPoint(this, scanResult);
-            Log.i(TAG, "update: "+scanResult.SSID);
+            LogUtil.i("update: " + scanResult.SSID);
             checkAP();
         }
     }
@@ -870,18 +873,17 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
                 new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialogs, int which) {
-                        if (select_dialog==null) {
+                        if (select_dialog == null) {
                             select_dialog = new AlertDialog.Builder(WifiCrackActivity.this);
                             select_dialog.setView(select_dialog_view);
                             selectDialogShow = select_dialog.show();
-                        }else {
+                        } else {
 
-                            if (selectDialogShow!=null && !selectDialogShow.isShowing()){
+                            if (selectDialogShow != null && !selectDialogShow.isShowing()) {
                                 selectDialogShow.show();
 
                             }
                         }
-
 
 
                     }
@@ -893,8 +895,15 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(wifiReceiver);
+        if (wifiReceiver!=null) {
+            unregisterReceiver(wifiReceiver);
+        }
+        if (wifiOpenOrClose!=null){
+            unregisterReceiver(wifiOpenOrClose);
+
+        }
     }
+
     private void showMessageDialog(String title, String message,
                                    String positiveButtonText, boolean bShowCancel,
                                    DialogInterface.OnClickListener positiveButtonlistener) {
@@ -911,23 +920,23 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
         builder.create().show();
     }
 
-    public void getPassWorld(String ASSET_NAME){
+    public void getPassWorld(String ASSET_NAME) {
 
-        if (ASSET_NAME.equals(ASSET_NAME_1)){
+        if (ASSET_NAME.equals(ASSET_NAME_1)) {
 
-            ASSET_NAME_LENGHT=ASSET_NAME_1_LENGHT;
-        }else if (ASSET_NAME.equals(ASSET_NAME_2)){
+            ASSET_NAME_LENGHT = ASSET_NAME_1_LENGHT;
+        } else if (ASSET_NAME.equals(ASSET_NAME_2)) {
 
-            ASSET_NAME_LENGHT=ASSET_NAME_2_LENGHT;
-        }else if (ASSET_NAME.equals(ASSET_NAME_3)){
+            ASSET_NAME_LENGHT = ASSET_NAME_2_LENGHT;
+        } else if (ASSET_NAME.equals(ASSET_NAME_3)) {
 
-            ASSET_NAME_LENGHT=ASSET_NAME_3_LENGHT;
-        }else if (ASSET_NAME.equals(ASSET_NAME_4)){
-            ASSET_NAME_LENGHT=ASSET_NAME_4_LENGHT;
+            ASSET_NAME_LENGHT = ASSET_NAME_3_LENGHT;
+        } else if (ASSET_NAME.equals(ASSET_NAME_4)) {
+            ASSET_NAME_LENGHT = ASSET_NAME_4_LENGHT;
         }
 
         try {
-            passwordGetter = new PasswordGetter("/sdcard/.reality/"+ASSET_NAME);
+            passwordGetter = new PasswordGetter("/sdcard/.reality/" + ASSET_NAME);
         } catch (FileNotFoundException e) {
             showMessageDialog("程序初始化失败", "sd卡错误无法初始化密码字典，请检查sd卡", "确定", false,
                     new DialogInterface.OnClickListener() {
@@ -940,50 +949,50 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
     }
 
     //获取积分
-    private void getIntegral(int number){
+    private void getIntegral(int number) {
 
-        if (integralDialog==null){
+        if (integralDialog == null) {
             integralDialog = new AlertDialog.Builder(WifiCrackActivity.this);
             integralDialog.setTitle("提示");
-            integralDialog.setMessage("解锁此功能需要"+number+"积分，当前积分不够,请先获取足够的积分在试");
+            integralDialog.setMessage("解锁此功能需要" + number + "积分，当前积分不够,请先获取足够的积分在试");
             integralDialog.setPositiveButton("确认", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    Intent intent = new Intent(WifiCrackActivity.this,IntegralMainActivity.class);
+                    Intent intent = new Intent(WifiCrackActivity.this, IntegralMainActivity.class);
                     startActivity(intent);
                     //前往获取积分
                 }
-            }).setNegativeButton("取消",null);
+            }).setNegativeButton("取消", null);
 
             integralDialogshow = integralDialog.show();
-        }else if (integralDialogshow!=null && !integralDialogshow.isShowing()){
+        } else if (integralDialogshow != null && !integralDialogshow.isShowing()) {
 
             integralDialogshow.show();
 
         }
     }
 
-    private void isIntegralOK(){
+    private void isIntegralOK() {
 
         netid = -1;
-        currentProgress=0;
-        scanResult=null;
+        currentProgress = 0;
+        scanResult = null;
         cracking = true;
-        if (crackBuilder==null){
+        if (crackBuilder == null) {
             crackBuilder = new AlertDialog.Builder(WifiCrackActivity.this);
             crackBuilder.setView(dialogView);
             tv_title.setText("正在准备");
-            crackWifiSSID=listData.get(posint).getName();
+            crackWifiSSID = listData.get(posint).getName();
             dialog = crackBuilder.show();
             dialog.setCancelable(false);
-        }else {
+        } else {
 
-            if (dialog!=null && !dialog.isShowing() ){
+            if (dialog != null && !dialog.isShowing()) {
 
                 dialog.show();
             }
         }
-        tv_progress.setText(""+currentProgress+"/"+ASSET_NAME_LENGHT);
+        tv_progress.setText("" + currentProgress + "/" + ASSET_NAME_LENGHT);
         try {
             ap = tmpap;
             connectNetwork(); // 连接网络
@@ -994,5 +1003,56 @@ public class WifiCrackActivity extends Activity implements View.OnClickListener 
 
 
     }
+
+    class WifiOpenOrClose extends BroadcastReceiver{
+
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            if (WifiManager.WIFI_STATE_CHANGED_ACTION.equals(intent.getAction())) {
+
+                int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, 0);
+
+                switch (wifiState) {
+                    case WifiManager.WIFI_STATE_DISABLED:
+                        LogUtil.i("onReceive: WIFI_STATE_DISABLED");
+                        break;
+                    case WifiManager.WIFI_STATE_ENABLED:
+                        LogUtil.i("onReceive: WIFI_STATE_ENABLED");
+                        if (isOne) {
+                            listView.postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+
+                                    getwifiData();
+                                    if (scanResults.size()>0) {
+                                        initDialogView();
+                                        initData();
+                                        getData();
+                                    }else {
+
+                                        showDialogTip("当前范围内没有可用WiFi", "我知道了", null, new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                finish();
+                                            }
+                                        },null);
+                                    }
+
+                                    progressDialog.dismiss();
+
+                                }
+                            }, 2000);
+
+                            isOne=false;
+                        }
+                        break;
+                }
+            }
+        }
+    }
+
+
 
 }
