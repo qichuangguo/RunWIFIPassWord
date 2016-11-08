@@ -8,7 +8,7 @@ import android.util.Log;
 
 public class LogUtil {
 
-    private static boolean isShowLog=true;
+    private static boolean isShowLog=false;
     private static String tag="chuangguo.qi";
     public static void i(String messager){
         if (isShowLog) {

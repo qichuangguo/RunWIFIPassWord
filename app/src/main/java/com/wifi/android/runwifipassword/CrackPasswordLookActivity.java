@@ -26,6 +26,12 @@ public class CrackPasswordLookActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_crack_password_look);
+        findViewById(R.id.iv_back).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
         DatabaseHelper helper = DatabaseHelper.getHelper(this);
         try {
             users = helper.getUserDao().queryForAll();

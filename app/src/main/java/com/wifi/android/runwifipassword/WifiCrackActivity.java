@@ -26,6 +26,7 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -69,7 +70,7 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
     private WifiReceiver wifiReceiver;
     private AccessPoint ap;
     private AccessPoint tmpap;
-    private String password;
+    private String password="";
     private boolean cracking;
     private int netid;
     private int netids;
@@ -122,6 +123,9 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
     private boolean isOne=true;
     private ProgressDialog progressDialog;
     private boolean isCrackOk = true;
+    private Dialog dialogFail;
+    private AlertDialog.Builder builderFail;
+    private boolean isbuilderFail=true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -218,7 +222,8 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
         wifimanager.startScan();
         scanResults = wifimanager.getScanResults();
         configuredNetworks = wifimanager.getConfiguredNetworks();
-        LogUtil.i("-----scanResults--" + scanResults.size());
+      //  LogUtil.i("-----scanResults--" + scanResults);
+        //LogUtil.i("-----configuredNetworks---"+configuredNetworks);
     }
 
     /**
@@ -306,7 +311,6 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
 
             for (int j = 0; j < configuredNetworks.size(); j++) {
                 String confguredSSID = configuredNetworks.get(j).SSID;
-
                 if (confguredSSID.length() < 1) {
                     break;
                 }
@@ -318,6 +322,8 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
                     wifipo.setNetid(configuredNetworks.get(j).networkId);
                     wifipo.setStrength(String.valueOf(Math.abs(level)));
                     if (!scanResults.get(i).SSID.equals(wifimanager.getConnectionInfo().getSSID().substring(1, wifimanager.getConnectionInfo().getSSID().length() - 1))) {
+
+                        myWifi.add(wifipo);
 
                     }
 
@@ -378,6 +384,13 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
         progressDialog = new ProgressDialog(WifiCrackActivity.this);
         progressDialog.setMessage("正在打开WiFi请稍等！");
 
+        findViewById(R.id.iv_back).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                finish();
+            }
+        });
 
         listView = (PinnedSectionListView) findViewById(R.id.listView);
         adapter = new listViewAdaper();
@@ -528,6 +541,12 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
                 getIntegral(30);
             }
         }
+        netid = -1;
+        WifiInfo connectionInfo = wifimanager.getConnectionInfo();
+        int netid = connectionInfo.getNetworkId();
+        wifimanager.disableNetwork(netid);
+        wifimanager.disconnect();
+        connectionInfo=null;
 
         if (selectDialogShow != null && selectDialogShow.isShowing()) {
             selectDialogShow.dismiss();
@@ -731,17 +750,28 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
                 } else if (state == SupplicantState.DISCONNECTED) {
                     str = "已断开";
                     if (listData.get(posint).getState() == 1) {
-                        layoutvisibility(View.GONE);
-                        wifimanager.removeNetwork(mConfig.networkId);
-                        wifimanager.saveConfiguration();
-                        getwifiData();
-                        getData();
-                        adapter.notifyDataSetChanged();
-                        AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
-                        builder.setTitle("提示");
-                        builder.setMessage("WIFI验证失败！你可以在列表中进行破解。");
-                        builder.setNegativeButton("我知道了", null).create().show();
+                        if (isbuilderFail) {
+                            isbuilderFail=false;
+                            adapter.notifyDataSetChanged();
+                            builderFail = new AlertDialog.Builder(WifiCrackActivity.this);
+                            builderFail.setTitle("提示");
+                            builderFail.setMessage("WIFI验证失败！你可以在列表中进行破解。");
+                            builderFail.setNegativeButton("我知道了", new DialogInterface.OnClickListener() {
+                                @Override
+                                    public void onClick(DialogInterface dialog, int which) {
 
+                                        layoutvisibility(View.GONE);
+                                        wifimanager.removeNetwork(mConfig.networkId);
+                                        wifimanager.saveConfiguration();
+                                        getwifiData();
+                                        getData();
+                                        isbuilderFail=true;
+
+                                }
+                            });
+
+                            dialogFail = builderFail.show();
+                        }
                     }
 
                 } else if (state == SupplicantState.DORMANT) {
@@ -761,7 +791,7 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
                 } else if (state == SupplicantState.INACTIVE) {
                     str = "休眠中...";
                     if (cracking) {
-                        connectNetwork();
+                        //connectNetwork();
                     }
                     // 连接网络
                 } else if (state == SupplicantState.INVALID) {
@@ -783,7 +813,7 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
                         getwifiData();
                         getData();
                         adapter.notifyDataSetChanged();
-                        if (!failDialog.isShowing()) {
+                        if (failDialog !=null && !failDialog.isShowing()) {
                             AlertDialog.Builder builder = new AlertDialog.Builder(WifiCrackActivity.this);
                             builder.setTitle("提示");
                             builder.setMessage("WIFI验证失败！你可以在列表中进行破解。");
@@ -792,7 +822,7 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
                         }
 
                     }
-                    if (cracking == true) {
+                    if (cracking) {
                         connectNetwork();
                     }
 
@@ -809,22 +839,22 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
             ap.mConfig.priority = 1;
             ap.mConfig.status = WifiConfiguration.Status.ENABLED;
             password = passwordGetter.getPassword(); // 从外部字典加载密码
-            //Log.i(TAG, "password: --------"+password);
+            LogUtil.i("password: --------"+password);
             if (password == null || password.length() == 0) {
                 cracking = false;
-                // Log.i(TAG, "password:==NULL");
+                showDialogTip("当前模式已破解完成,请更换模式后重新破解", "我知道了",null,null,null);
                 return;
             }
             password = "\"" + password + "\"";
             ap.mConfig.preSharedKey = password; // 设置密码
-            Log.d(TAG, ap.toString());
+            LogUtil.i(ap.toString());
             if (netid == -1) {
                 netid = wifimanager.addNetwork(ap.mConfig);
                 ap.mConfig.networkId = netid;
                 LogUtil.i( "添加AP失败");
             } else
                 wifimanager.updateNetwork(ap.mConfig);
-            if (wifimanager.enableNetwork(netid, true)) {
+            if (wifimanager.enableNetwork(netid, false)) {
                 LogUtil.i("connectNetwork: 启用网络失败");
             }
             currentProgress++;
@@ -863,9 +893,11 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
     private void checkAP() {
 
         if (tmpap.security == AccessPoint.SECURITY_NONE) {
+            LogUtil.i("SECURITY_NONE");
             return;
         } else if ((tmpap.security == AccessPoint.SECURITY_EAP)
                 || (tmpap.security == AccessPoint.SECURITY_WEP)) {
+            LogUtil.i("SECURITY_WEP");
             return;
         }
 
@@ -1016,7 +1048,22 @@ public class WifiCrackActivity extends BaseActivity implements View.OnClickListe
 
                 switch (wifiState) {
                     case WifiManager.WIFI_STATE_DISABLED:
-                        LogUtil.i("onReceive: WIFI_STATE_DISABLED");
+
+                        if (!isOne) {
+                            showDialogTip("当前WiFi已关闭是否重新打开", "打开", "取消", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+
+                                    wifimanager.setWifiEnabled(true);
+                                }
+                            }, new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    finish();
+                                }
+                            });
+                        }
+
                         break;
                     case WifiManager.WIFI_STATE_ENABLED:
                         LogUtil.i("onReceive: WIFI_STATE_ENABLED");

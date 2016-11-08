@@ -25,9 +25,8 @@ import com.yow.YoManage;
 import www.yiba.com.wifisdk.activity.YIbaWifiActivity;
 import www.yiba.com.wifisdk.manager.WiFiSDKManager;
 
-public class MainActivity extends Activity implements View.OnClickListener {
+public class MainActivity extends BaseActivity implements View.OnClickListener {
 
-    private int myIntegral=0;
     private String TAG="chuangguo.qi";
     private TextView tv_integral;
     private boolean isNetwork=true;
@@ -68,8 +67,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
         YoManage.getPoints(new PointListener() {
             @Override
             public void getPointResult(int i) {
-                Log.i(TAG, "getPointResult:getPointResult "+i);
-                if (isNetwork) {
+               int integral= SharedPrefsUtil.getValue(MainActivity.this,"myIntegral",0);
+                if (i>integral) {
                     SharedPrefsUtil.putValue(MainActivity.this, "myIntegral", i);
                     tv_integral.setText(i + "");
                 }
@@ -77,31 +76,42 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
             @Override
             public void givePointResult(int i, int i1) {
-                Log.i(TAG, "getPointResult:givePointResult "+i+"i1--"+i1);
+                //Log.i(TAG, "getPointResult:givePointResult "+i+"i1--"+i1);
             }
 
             @Override
             public void consumePointResult(int i, int i1) {
-                Log.i(TAG, "getPointResult:consumePointResult "+i+"i1--"+i1);
+                //Log.i(TAG, "getPointResult:consumePointResult "+i+"i1--"+i1);
             }
 
             @Override
             public void rewardPointResult(String s, int i, int i1) {
-                Log.i(TAG, "getPointResult:rewardPointResult "+s+"i---"+i+"i1--"+i1);
+                //Log.i(TAG, "getPointResult:rewardPointResult "+s+"i---"+i+"i1--"+i1);
             }
         });
     }
 
     @Override
     public void onClick(View view) {
-
+        int myIntegral1 = SharedPrefsUtil.getValue(this, "myIntegral", 0);
         int id = view.getId();
         Intent intent=null;
 
         if (id==R.id.bt_start_crack){
 
-            intent = new Intent(this,WifiCrackActivity.class);
-            startActivity(intent);
+            if (myIntegral1>=2) {
+                intent = new Intent(this, WifiCrackActivity.class);
+                startActivity(intent);
+            }else {
+
+                showDialogTip("激活此功能需要2积分,是否去获取积分", "是", "否", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Intent intent = new Intent(MainActivity.this, IntegralMainActivity.class);
+                        startActivity(intent);
+                    }
+                },null);
+            }
 
 
         }else if (id==R.id.bt_look_password){
@@ -129,7 +139,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         }else if (id==R.id.bt_exit){
 
-            finish();
+            showDialogTip("是否退出当前应用", "退出", "取消", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    finish();
+                }
+            },null);
+
 
         }
 
