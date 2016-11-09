@@ -95,8 +95,10 @@ public class CrackPasswordLookActivity extends Activity {
     }
 
     public String Stringformat(String str){
-
-        return str.substring(1,str.length()-1);
+        if (str.length()>2) {
+            return str.substring(1, str.length() - 1);
+        }
+        return "条目异常";
     }
 
 }

@@ -11,6 +11,15 @@ import android.widget.ImageView;
 import com.baidu.mobstat.SendStrategyEnum;
 import com.baidu.mobstat.StatService;
 
+/**
+ * 一款快速破解WiFi密码的软件，其中有四种破解方式可供选择，破解成功率依次增强，对破解的WiFi密码进行保存方便以后查看。
+ * 还可以查看你手机已连接过得WiFi密码。
+ * 还可以查询在公共场合一些未加密的WiFi。
+ *
+ *
+ * 一款快速破解WiFi密码的软件，其中有四种破解方式可供选择，破解成功率依次增强，对破解的WiFi密码进行保存方便以后查看当前版本为1.0，可能存在一些bug,但是会慢慢的进行修复，
+ */
+
 public class WelcomeActivity extends Activity {
 
     @Override
