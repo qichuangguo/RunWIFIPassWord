@@ -54,7 +54,7 @@
             android:padding="5dp"
             android:alpha="20"
             android:background="#00fc11"
-            android:text="开始破解"
+            android:text="智能连接"
             android:textSize="18sp"
             android:textColor="#FFFFFF"
             />

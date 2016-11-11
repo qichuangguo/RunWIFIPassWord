@@ -35,5 +35,5 @@
     <string name="text_view">忘记\n密码</string>
     <drawable name="runninggame_bkcolor">#FAFAD2</drawable>
     <drawable name="card_bkcolor">#FFDEAD</drawable>
-    <string name="welcom_str">智&#160;&#160;&#160;破&#160;&#160;&#160;解</string>
+    <string name="welcom_str">智&#160;&#160;&#160;连&#160;&#160;&#160;接</string>
 </resources>
